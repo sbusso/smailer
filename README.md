@@ -54,7 +54,7 @@ Here is an example how you could proceed with creating and issuing a newsletter:
 
 	# locate the mailing list we'll be sending to
 	list = Smailer::Models::MailingList.first
-	
+
 	# create a corresponding mail campaign
 	campaign_params = {
 		:from      => 'noreply@example.org',
@@ -66,7 +66,10 @@ Here is an example how you could proceed with creating and issuing a newsletter:
 	campaign = Smailer::Models::MailCampaign.new campaign_params
 	campaign.add_unsubscribe_method :all
 	campaign.save!
-	
+
+	# Add attachments
+	campaign.add_attachment 'attachment.pdf', 'url_or_file_path_to_attachment'
+
 	# enqueue mails to be sent out
 	subscribers = %w[
 		subscriber@domain.com
@@ -77,10 +80,15 @@ Here is an example how you could proceed with creating and issuing a newsletter:
 	  campaign.queued_mails.create! :to => subscriber
 	end
 
+### Attachments
+
+You can have zero or more attachments to any mail campaign. As demonstrated in the example above, you add them to the campain using the `MailCampaign#add_attachment(file_name, url_or_path)` method.
+
+Any attached files will be referenced at the moment of sending and must be reachable and readable by the send task. Currently, `open-uri` is used to fetch the content of the path or URI. The maximum length of the path/URI field is 2048 symbols.
 
 ### Managing unsubscriptions
 
-Among the few unsubscription methods supported, probably the most widely used one is unsubscription via a unsubscribe link in the email. 
+Among the few unsubscription methods supported, probably the most widely used one is unsubscription via a unsubscribe link in the email.
 
 In order to help you with implementing it, Smailer provides you with some interpolations you can use in the email's body:
 
@@ -145,7 +153,7 @@ Suppose you manage your site's newsletter subscriptions via a `Subscription` mod
 	    :subscribed_checker => subscribed_checker,
 	  }) do |unsubscribe_details|
 	    subscription = Subscription.confirmed.subscribed.where(:email => unsubscribe_details[:recipient]).first
-	
+
 	    if subscription
 	      subscription.subscribed = false
 	      subscription.unsubscribe_reason = 'Automatic, due to bounces'
